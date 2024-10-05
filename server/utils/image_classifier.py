@@ -1,9 +1,15 @@
+import os
+from pathlib import Path
+
 import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
 from PIL import Image
 
-model = models.inception_v3(pretrained=True)
+parent_dir = Path(__file__).parent.parent
+classes_file = parent_dir.parent / 'data' / 'imagenet-classes.txt'
+
+model = models.inception_v3(weights=models.Inception_V3_Weights.DEFAULT)
 model.eval()
 
 transform = transforms.Compose([
@@ -23,7 +29,7 @@ def classify_image(image_file):
         outputs = model(image_tensor)
         probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
         top_probabilities, top_indices = torch.topk(probabilities, 3)
-    with open('imagenet_classes.txt') as f:
+    with open(classes_file) as f:
         labels = [line.strip() for line in f.readlines()]
     top_predictions = [(labels[idx], prob.item()) for idx, prob in zip(top_indices, top_probabilities)]
     return top_predictions

@@ -1,18 +1,39 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 
-const DrawingCanvas = ({ onSubmit }) => {
+const DrawingCanvas = ({ onSubmit, onStartOver }) => {
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    canvas.width = window.innerWidth * 0.8;
-    canvas.height = window.innerHeight * 0.6;
     const context = canvas.getContext('2d');
-    context.strokeStyle = 'black';
-    context.lineWidth = 2;
+    
+    const resizeCanvas = () => {
+      const { width, height } = canvas.getBoundingClientRect();
+      
+      if (canvas.width !== width || canvas.height !== height) {
+        const scale = window.devicePixelRatio;
+        canvas.width = width * scale;
+        canvas.height = height * scale;
+        context.scale(scale, scale);
+        
+        context.strokeStyle = 'black';
+        context.lineWidth = 2;
+        
+        // Clear canvas with white background
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
     contextRef.current = context;
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+    };
   }, []);
 
   const startDrawing = ({ nativeEvent }) => {
@@ -39,7 +60,6 @@ const DrawingCanvas = ({ onSubmit }) => {
   const saveDrawing = () => {
     const dataURL = canvasRef.current.toDataURL('image/jpeg');
     onSubmit(dataURL);
-    clearCanvas();
   };
 
   const clearCanvas = () => {
@@ -50,15 +70,19 @@ const DrawingCanvas = ({ onSubmit }) => {
   };
 
   return (
-    <div>
+    <div className="drawing-canvas-container">
       <canvas
         ref={canvasRef}
+        className="drawing-canvas"
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}
         onMouseOut={stopDrawing}
       />
-      <button onClick={saveDrawing}>Submit Drawing</button>
+      <div className="drawing-buttons">
+        <button onClick={saveDrawing}>Submit</button>
+        <button onClick={() => { clearCanvas(); onStartOver(); }}>Start Over</button>
+      </div>
     </div>
   );
 };

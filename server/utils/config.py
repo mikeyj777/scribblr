@@ -1,6 +1,8 @@
+from data.pwds import Pwds
+
 db_config = {
-    'host': 'your_db_host',
-    'database': 'your_db_name',
-    'user': 'your_db_user',
-    'password': 'your_db_password'
+    'host': '127.0.0.1',
+    'database': 'scribblr',
+    'user': 'postgres',
+    'password': Pwds.DB_PWD
 }
