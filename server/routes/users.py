@@ -3,6 +3,11 @@ from db import get_user
 
 users_bp = Blueprint('users', __name__)
 
+@users_bp.record
+def record_params(setup_state):
+    app = setup_state.app
+    users_bp.config = app.config
+
 @users_bp.route('/api/users', methods=['POST'])
 def get_user_route():
     try:

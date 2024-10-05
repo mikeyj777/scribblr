@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 from PIL import Image
 
 parent_dir = Path(__file__).parent.parent
-classes_file = parent_dir.parent / 'data' / 'imagenet-classes.txt'
+classes_file = parent_dir / 'data' / 'imagenet-classes.txt'
 
 model = models.inception_v3(weights=models.Inception_V3_Weights.DEFAULT)
 model.eval()
