@@ -1,12 +1,12 @@
 from flask import Blueprint, request, jsonify
+from flask_cors import CORS
 from db import get_user
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 users_bp = Blueprint('users', __name__)
-
-@users_bp.record
-def record_params(setup_state):
-    app = setup_state.app
-    users_bp.config = app.config
+CORS(users_bp)  # Apply CORS to the users blueprint
 
 @users_bp.route('/api/users', methods=['POST'])
 def get_user_route():
@@ -17,4 +17,10 @@ def get_user_route():
     except KeyError:
         return jsonify({"error": "Name is required"}), 400
     except Exception as e:
+        logging.error(f"Error in get_user_route: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+# Add an OPTIONS method to handle preflight requests
+@users_bp.route('/api/users', methods=['OPTIONS'])
+def options_user_route():
+    return '', 200

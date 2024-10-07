@@ -16,24 +16,19 @@ def create_app():
     # Set the upload folder
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
     
-    logging.debug(f"Upload folder: {app.config['UPLOAD_FOLDER']}")
-
     # Ensure the upload folder exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+    # Apply CORS configuration
+    CORS(app, resources={r"/*": {"origins": ["http://scribble.riskspace.net", "http://localhost:3000"]}}, supports_credentials=True)
+
+    # Register blueprints
     app.register_blueprint(drawings_bp)
-    app.register_blueprint(users_bp)
-    
-    # Other app configurations and blueprints registration go here
-    app = Flask(__name__)
-    CORS(app, resources={r"/*": {"origins": ["http://scribble.riskspace.net", "http://localhost:3000"]}})
-    app.register_blueprint(users_bp)
-    app.register_blueprint(drawings_bp)
+    app.register_blueprint(users_bp)  # Uncomment this line
     
     return app
 
-# If you're using the app factory pattern:
-app = create_app()
-
 if __name__ == '__main__':
-    app.run()
+    # If you're using the app factory pattern:
+    app = create_app()
+    app.run(debug=True)

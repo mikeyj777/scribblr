@@ -1,35 +1,39 @@
 import os
+import numpy as np
+import tensorflow as tf
+from PIL import Image
+from tensorflow.keras.models import load_model
+
+import tensorflow as tf
+
 from pathlib import Path
 
-import torch
-import torchvision.models as models
-import torchvision.transforms as transforms
-from PIL import Image
+parent = Path(__file__).parent.parent
+data_path = os.path.join(parent, 'data')
 
-parent_dir = Path(__file__).parent.parent
-classes_file = parent_dir / 'data' / 'imagenet-classes.txt'
+custom_objects = {
+    'GlorotUniform': tf.keras.initializers.GlorotUniform(),
+    'Zeros': tf.keras.initializers.Zeros()
+}
 
-model = models.inception_v3(weights=models.Inception_V3_Weights.DEFAULT)
-model.eval()
+with tf.keras.utils.custom_object_scope(custom_objects):
+    model = tf.keras.models.load_model(f'{data_path}/doodleNet-model.h5')
 
-transform = transforms.Compose([
-    transforms.Resize(299),
-    transforms.CenterCrop(299),
-    transforms.ToTensor(),
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
-    )
-])
+CLASSES = np.genfromtxt(f'{data_path}/class_names.txt', dtype=str)
 
-def classify_image(image_file):
-    image = Image.open(image_file)
-    image_tensor = transform(image).unsqueeze(0)
-    with torch.no_grad():
-        outputs = model(image_tensor)
-        probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
-        top_probabilities, top_indices = torch.topk(probabilities, 3)
-    with open(classes_file) as f:
-        labels = [line.strip() for line in f.readlines()]
-    top_predictions = [(labels[idx], prob.item()) for idx, prob in zip(top_indices, top_probabilities)]
+def preprocess_image(image):
+
+    image = image.resize((28, 28), resample=Image.BILINEAR)
+    image = image.convert('L')  # convert to grayscale
+    image_array = np.array(image).astype('float32') / 255.0
+    image_array = np.expand_dims(image_array, axis=-1)
+    image_array = np.expand_dims(image_array, axis=0)
+    return image_array
+
+def classify_image(image_path):
+    image = Image.open(image_path)
+    image_array = preprocess_image(image)
+    predictions = model.predict(image_array)[0]
+    top_indices = np.argsort(predictions)[::-1][:3]
+    top_predictions = [(CLASSES[i], float(predictions[i])) for i in top_indices]
     return top_predictions

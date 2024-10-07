@@ -3,12 +3,15 @@ import axios from 'axios';
 import DrawingCanvas from './components/DrawingCanvas';
 import Gallery from './components/Gallery';
 import NameInput from './components/NameInput';
+import ImageClassifier from './components/ImageClassifier';
 import { SERVER_HOST } from './utils/config';
 
 const App = () => {
   const [userId, setUserId] = useState('');
   const [drawings, setDrawings] = useState([]);
   const [selectedDrawing, setSelectedDrawing] = useState(null);
+  const [imageData, setImageData] = useState(null);
+  const [classifications, setClassifications] = useState([]);
 
   useEffect(() => {
     if (userId) {
@@ -37,22 +40,11 @@ const App = () => {
   };
 
   const handleDrawingSubmit = async (dataURL) => {
-    const blob = await (await fetch(dataURL)).blob();
-    const formData = new FormData();
-    formData.append('image', blob, 'drawing.jpg');
-    formData.append('userId', userId);
-    try {
-      const response = await axios.post(`${SERVER_HOST}/api/drawings`, formData);
-      const newDrawing = {
-        id: response.data.id,
-        image_path: response.data.image_path,
-        predictions: response.data.predictions,
-      };
-      setDrawings([...drawings, newDrawing]);
-      setSelectedDrawing(newDrawing);
-    } catch (error) {
-      console.error('Error saving drawing:', error);
-    }
+    setImageData(dataURL);
+  };
+
+  const handleClassification = (results) => {
+    setClassifications(results);
   };
 
   const handleDrawingSelect = (drawing) => {
@@ -61,26 +53,41 @@ const App = () => {
 
   const handleStartOver = () => {
     setSelectedDrawing(null);
+    setImageData(null);
+    setClassifications([]);
   };
 
   return (
     <div className="app">
-      <h1 className="app-title">Drawing App</h1>
+      <h1>Drawing App</h1>
       {!userId ? (
         <NameInput onSubmit={handleNameSubmit} />
       ) : (
-        <div className="app-content">
-          <div className="drawing-section">
+        <>
+          <div className="drawing-container">
             <DrawingCanvas onSubmit={handleDrawingSubmit} onStartOver={handleStartOver} />
           </div>
-          <div className="gallery-section">
+          <div className="gallery-container">
             <Gallery
               drawings={drawings}
               selectedDrawing={selectedDrawing}
               onDrawingSelect={handleDrawingSelect}
             />
           </div>
-        </div>
+          <ImageClassifier imageData={imageData} onClassification={handleClassification} />
+          {classifications.length > 0 && (
+            <div className="classification-results">
+              <h3>Classification Results:</h3>
+              <ul>
+                {classifications.map((result, index) => (
+                  <li key={index}>
+                    {result.className}: {(result.probability * 100).toFixed(2)}%
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

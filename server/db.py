@@ -16,6 +16,35 @@ def create_connection():
     conn = psycopg2.connect(**db_config)
     return conn
 
+def get_user(name):
+    conn = create_connection()
+    cur = conn.cursor()
+    user_id = None
+    try:
+        # Check if user already exists
+        cur.execute("SELECT id FROM users WHERE name = %s", (name,))
+        existing_user = cur.fetchone()
+        
+        if existing_user:
+            # User already exists, return their id
+            user_id = existing_user[0]
+            logging.info(f"Existing user found. Name: {name}, ID: {user_id}")
+        else:
+            # User doesn't exist, create new user
+            cur.execute("INSERT INTO users(name) VALUES(%s) RETURNING id", (name,))
+            user_id = cur.fetchone()[0]
+            conn.commit()
+            logging.info(f"New user created. Name: {name}, ID: {user_id}")
+    except Exception as e:
+        conn.rollback()
+        logging.error(f"Error creating/retrieving user {name}: {str(e)}")
+        raise e
+    finally:
+        cur.close()
+        conn.close()
+
+    return user_id
+
 def save_drawing(user_id, image_file, predictions):
     conn = create_connection()
     cur = conn.cursor()
@@ -26,9 +55,6 @@ def save_drawing(user_id, image_file, predictions):
         # Create the image path for database storage
         image_path = os.path.join('uploads', filename)
         
-        logging.debug('in db.save_drawing()')
-        logging.debug(f"upload folder: {current_app.config.get('UPLOAD_FOLDER')}")
-
         # Create the full path for file saving
         full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         
@@ -83,30 +109,3 @@ def get_drawings(user_id):
         cur.close()
         conn.close()
 
-def get_user(name):
-    conn = create_connection()
-    cur = conn.cursor()
-    try:
-        # Check if user already exists
-        cur.execute("SELECT id FROM users WHERE name = %s", (name,))
-        existing_user = cur.fetchone()
-        
-        if existing_user:
-            # User already exists, return their id
-            user_id = existing_user[0]
-            logging.info(f"Existing user found. Name: {name}, ID: {user_id}")
-            return user_id
-        else:
-            # User doesn't exist, create new user
-            cur.execute("INSERT INTO users(name) VALUES(%s) RETURNING id", (name,))
-            user_id = cur.fetchone()[0]
-            conn.commit()
-            logging.info(f"New user created. Name: {name}, ID: {user_id}")
-            return user_id
-    except Exception as e:
-        conn.rollback()
-        logging.error(f"Error creating/retrieving user {name}: {str(e)}")
-        raise e
-    finally:
-        cur.close()
-        conn.close()

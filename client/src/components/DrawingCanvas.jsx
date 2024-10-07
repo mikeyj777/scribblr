@@ -7,33 +7,12 @@ const DrawingCanvas = ({ onSubmit, onStartOver }) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
     const context = canvas.getContext('2d');
-    
-    const resizeCanvas = () => {
-      const { width, height } = canvas.getBoundingClientRect();
-      
-      if (canvas.width !== width || canvas.height !== height) {
-        const scale = window.devicePixelRatio;
-        canvas.width = width * scale;
-        canvas.height = height * scale;
-        context.scale(scale, scale);
-        
-        context.strokeStyle = 'black';
-        context.lineWidth = 2;
-        
-        // Clear canvas with white background
-        context.fillStyle = 'white';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-      }
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    context.strokeStyle = 'black';
+    context.lineWidth = 2;
     contextRef.current = context;
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-    };
   }, []);
 
   const startDrawing = ({ nativeEvent }) => {
@@ -58,7 +37,7 @@ const DrawingCanvas = ({ onSubmit, onStartOver }) => {
   };
 
   const saveDrawing = () => {
-    const dataURL = canvasRef.current.toDataURL('image/jpeg');
+    const dataURL = canvasRef.current.toDataURL('image/png');
     onSubmit(dataURL);
   };
 
